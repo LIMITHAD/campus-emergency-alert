@@ -63,7 +63,7 @@ const Login = () => {
 
   const handleGoogleLogin = () => {
     setGoogleLoading(true);
-    window.location.href = 'http://localhost:5000/api/auth/google';
+    window.location.href = `${process.env.REACT_APP_API_URL.replace('/api', '')}/api/auth/google`;
   };
 
   const inputStyle = {

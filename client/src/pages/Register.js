@@ -29,12 +29,11 @@ const Register = () => {
       setLoading(false);
     }
   };
-
+  
   const handleGoogleLogin = () => {
-    setGoogleLoading(true);
-    window.location.href = 'http://localhost:5000/api/auth/google';
+  setGoogleLoading(true);
+  window.location.href = `${process.env.REACT_APP_API_URL.replace('/api', '')}/api/auth/google`;
   };
-
   const inputStyle = {
     width: '100%', background: '#f8f9fa',
     border: '1px solid #dee2e6', borderRadius: 10,
