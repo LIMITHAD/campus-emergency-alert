@@ -441,10 +441,6 @@ sudo systemctl start mongod
 - Ensure CORS `origin` in server.js matches your frontend URL exactly
 - For production, update `REACT_APP_SOCKET_URL`
 
-**Twilio SMS not sending**
-- Verify phone numbers in E.164 format: `+15551234567`
-- For trial accounts, you can only send to verified numbers
-
 ---
 
 ## 📄 License
