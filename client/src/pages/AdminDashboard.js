@@ -50,11 +50,15 @@ const AdminDashboard = () => {
       socket.on('panicUpdated', (updated) => {
         setPanics(p => p.map(r => r._id === updated._id ? updated : r));
       });
+      socket.on('panicDeleted', ({ panicId }) => {
+        setPanics(p => p.filter(r => r._id !== panicId));
+      });
     }
     return () => {
       if (socket) {
         socket.off('newAlert'); socket.off('alertDeleted');
         socket.off('newPanicRequest'); socket.off('panicUpdated');
+        socket.off('panicDeleted');
       }
     };
   }, [loadData]);
@@ -76,6 +80,15 @@ const AdminDashboard = () => {
     } catch { showToast('Failed to update', 'danger'); }
   };
 
+  const handleDeletePanic = async (id) => {
+    if (!window.confirm('Delete this panic request permanently?')) return;
+    try {
+      await panicAPI.deletePanic(id);
+      setPanics(p => p.filter(r => r._id !== id));
+      showToast('Panic request deleted');
+    } catch { showToast('Failed to delete panic', 'danger'); }
+  };
+
   const tabStyle = (tab) => ({
     padding: '10px 20px',
     background: activeTab === tab ? '#e94560' : 'white',
@@ -91,7 +104,6 @@ const AdminDashboard = () => {
     <div style={{ background: '#f0f2f5', minHeight: '100vh', padding: '24px 16px' }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
 
-        {/* Toast */}
         {toast && (
           <div style={{
             position: 'fixed', top: 80, right: 20, zIndex: 9999,
@@ -103,7 +115,6 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Header */}
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
           <div>
             <h2 style={{ color: '#1a1a2e', fontWeight: 800 }}>🛡️ Admin Dashboard</h2>
@@ -118,7 +129,6 @@ const AdminDashboard = () => {
           </Link>
         </div>
 
-        {/* Stats */}
         <div className="row g-3 mb-4">
           {[
             { icon: '🚨', val: alerts.filter(a => a.status === 'Active').length, label: 'Active Alerts', color: '#e94560' },
@@ -142,7 +152,6 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Tabs */}
         <div className="d-flex gap-2 mb-4 flex-wrap">
           {[
             ['alerts', '📢 Alerts'],
@@ -161,7 +170,6 @@ const AdminDashboard = () => {
           </div>
         ) : (
           <>
-            {/* Alerts Tab */}
             {activeTab === 'alerts' && (
               <div>
                 {alerts.length === 0 ? (
@@ -175,7 +183,6 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {/* Panics Tab */}
             {activeTab === 'panics' && (
               <div>
                 <div className="d-flex gap-2 mb-3 flex-wrap">
@@ -191,6 +198,7 @@ const AdminDashboard = () => {
                     </button>
                   ))}
                 </div>
+
                 {filteredPanics.length === 0 ? (
                   <div className="text-center py-5">
                     <p style={{ color: '#6c757d' }}>No panic requests</p>
@@ -204,7 +212,7 @@ const AdminDashboard = () => {
                     boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
                   }}>
                     <div className="d-flex justify-content-between align-items-start flex-wrap gap-2">
-                      <div>
+                      <div style={{ flex: 1 }}>
                         <div className="d-flex align-items-center gap-2 mb-1">
                           <span style={{ color: '#1a1a2e', fontWeight: 700 }}>
                             🆘 {panic.userId?.name || 'Unknown Student'}
@@ -231,39 +239,46 @@ const AdminDashboard = () => {
                           {new Date(panic.createdAt).toLocaleString()}
                         </small>
                       </div>
-                      {panic.status !== 'Resolved' && (
-                        <div className="d-flex flex-column gap-2" style={{ minWidth: 180 }}>
-                          <input type="text" placeholder="Add note (optional)"
-                            value={resolveNote[panic._id] || ''}
-                            onChange={e => setResolveNote(p => ({ ...p, [panic._id]: e.target.value }))}
-                            style={{
-                              background: '#f8f9fa', border: '1px solid #dee2e6',
-                              borderRadius: 8, padding: '6px 10px',
-                              color: '#1a1a2e', fontSize: 12,
-                            }} />
-                          <div className="d-flex gap-2">
-                            {panic.status === 'Pending' && (
-                              <button onClick={() => handleUpdatePanic(panic._id, 'In Progress')}
-                                className="btn btn-sm btn-warning"
+
+                      <div className="d-flex flex-column gap-2" style={{ minWidth: 180 }}>
+                        {panic.status !== 'Resolved' && (
+                          <>
+                            <input type="text" placeholder="Add note (optional)"
+                              value={resolveNote[panic._id] || ''}
+                              onChange={e => setResolveNote(p => ({ ...p, [panic._id]: e.target.value }))}
+                              style={{
+                                background: '#f8f9fa', border: '1px solid #dee2e6',
+                                borderRadius: 8, padding: '6px 10px',
+                                color: '#1a1a2e', fontSize: 12,
+                              }} />
+                            <div className="d-flex gap-2">
+                              {panic.status === 'Pending' && (
+                                <button onClick={() => handleUpdatePanic(panic._id, 'In Progress')}
+                                  className="btn btn-sm btn-warning"
+                                  style={{ borderRadius: 6, fontSize: 12, flex: 1 }}>
+                                  In Progress
+                                </button>
+                              )}
+                              <button onClick={() => handleUpdatePanic(panic._id, 'Resolved')}
+                                className="btn btn-sm btn-success"
                                 style={{ borderRadius: 6, fontSize: 12, flex: 1 }}>
-                                In Progress
+                                ✅ Resolve
                               </button>
-                            )}
-                            <button onClick={() => handleUpdatePanic(panic._id, 'Resolved')}
-                              className="btn btn-sm btn-success"
-                              style={{ borderRadius: 6, fontSize: 12, flex: 1 }}>
-                              ✅ Resolve
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                            </div>
+                          </>
+                        )}
+                        <button onClick={() => handleDeletePanic(panic._id)}
+                          className="btn btn-sm btn-danger"
+                          style={{ borderRadius: 6, fontSize: 12, width: '100%' }}>
+                          🗑️ Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
 
-            {/* Users Tab */}
             {activeTab === 'users' && (
               <div style={{
                 background: 'white', borderRadius: 12,

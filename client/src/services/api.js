@@ -46,6 +46,7 @@ export const panicAPI = {
   getMyPanics: () => api.get('/panic/my'),
   getPanicRequests: (params) => api.get('/panic', { params }),
   updatePanicStatus: (id, data) => api.put(`/panic/${id}/status`, data),
+  deletePanic: (id) => api.delete(`/panic/${id}`),
 };
 
 export const userAPI = {
